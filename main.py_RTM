@@ -7,23 +7,26 @@
 
 ### import
 import os
-import logging
 import re
 import json
+import requests
 import time
 import pprint
-from flask import Flask
-from slack_sdk.web import WebClient
-from slackeventsapi import SlackEventAdapter
-#import requests
-#from slack_sdk.rtm import RTMClient
+#from pprint import pprint
+from slack_sdk.rtm import RTMClient
 
-# entrypoint
-app = Flask(__name__)
-slack_events_adapter = SlackEventAdapter(os.environ["SLACK_SIGNING_SECRET"], "/slack/events", app)
+###  global variables
+# DeepL API
+url = "https://api.deepl.com/v2/translate"
+deepl_auth_key = os.environ["DEEPL_TOKEN"]
 
-# Initialize a Web API client
-slack_web_client = WebClient(token=os.environ['SLACK_BOT_TOKEN'])
+# Slack
+slack_token = os.environ["SLACK_BOT_TOKEN"]
+guardian_uid = os.environ["GUARDIAN_UID"]
+
+# bot name/id
+myid = ""
+myname = ""
 
 ###
 ### Functions
@@ -132,26 +135,8 @@ def translate_message(**payload):
 ### main
 if __name__ == "__main__":
 
-    ###  global variables
-    # DeepL API
-    #url = "https://api.deepl.com/v2/translate"
-    #deepl_auth_key = os.environ["DEEPL_TOKEN"]
-
-    # Slack
-    #slack_token = os.environ["SLACK_BOT_TOKEN"]
-    #guardian_uid = os.environ["GUARDIAN_UID"]
-
-    # bot name/id
-    #myid = ""
-    #myname = ""
-
-    logger = logging.getLogger()
-    logger.setLevel(logging.DEBUG)
-    logger.addHandler(logging.StreamHandler())
-    app.run(port=3000)
-
     # Create a RTM client license
-#    rtm_client = RTMClient(token=slack_token)
+    rtm_client = RTMClient(token=slack_token)
 
     # Establish a WebSocket connection with Slack.
-#    rtm_client.start()
+    rtm_client.start()
