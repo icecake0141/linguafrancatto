@@ -1,4 +1,4 @@
 slack_sdk>=3.0
 slackeventsapi>=2.1.0
 Flask>=1.1.2
-aionhttp>=3.0.0
+# aionhttp>=3.0.0
