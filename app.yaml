@@ -1,12 +1,14 @@
 runtime: python38
-env_variables:
-  DEEPL_TOKEN: ""
-  SLACK_SIGNING_SECRET: ""
-  SLACK_BOT_TOKEN: ""
-  GUARDIAN_UID: ""
+
 instance_class: B1
+
 manual_scaling:
   instances: 1
+
 handlers:
-- url: /.*
-  script: auto
+  - url: /slack/events
+    secure: always
+    script: auto
+
+includes:
+  - env_variables.yaml

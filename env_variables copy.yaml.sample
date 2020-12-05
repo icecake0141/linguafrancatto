@@ -1,0 +1,14 @@
+env_variables:
+# DeepL API token
+  DEEPL_TOKEN: "xxxx"
+# Slack API secrets
+  SLACK_SIGNING_SECRET: "xxxx"
+  SLACK_BOT_TOKEN: "xxxx"
+# Slack UID of bot admin
+  GUARDIAN_UID: "xxxx"
+# Google Secret Manage information
+  PROJECT_ID: "sample-project"
+  SECRET_NAME: "sample"
+  SECRET_VERSION: '0'
+# Debug mode True / False
+  DEBUG_MODE: "True"
