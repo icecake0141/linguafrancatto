@@ -20,6 +20,18 @@ from slack_bolt.adapter.flask import SlackRequestHandler
 from slack_sdk import WebClient
 from slack_sdk.errors import SlackApiError
 
+##################################
+# Google App Engie debugger
+# Enable this if you want to debut on GaE
+#try:
+#    import googleclouddebugger
+#    googleclouddebugger.enable(
+#        breakpoint_enable_canary=False
+#    )
+#except ImportError:
+#    pass
+
+
 ############
 ###  global variables
 # Debug
@@ -36,6 +48,7 @@ list_channel_basename = os.environ.get("MULTI_CHANNEL").split(",")
 
 # Slack channel list dict
 conversations_store = {}
+dict_channel = {}
 
 ############
 ############ Initialization ############
@@ -118,21 +131,22 @@ def save_conversations(conversations):
 # retrieve channel list and store to conversations_store
 def retrieve_channel_list():
 
-    dict_channel = {}
+    channeldict = {}
     fetch_conversations(bolt_app.client, bolt_app.logger)
 
     # extract channel name and channel id info
     for x in conversations_store.keys():
-        dict_channel[conversations_store[x]['name']] = conversations_store[x]['id']
+        channeldict[conversations_store[x]['name']] = conversations_store[x]['id']
     
     # dict_channel = {'channel_name': 'channel_id'}
-    return dict_channel
+    return channeldict
 
 ############ END Functions ############
 ############
 
 ############
 ############ Bolt handlers ############
+
 
 @bolt_app.message("Meousage")
 def usage(ack:Ack, message, say):
@@ -250,14 +264,32 @@ def slack_events():
     return handler.handle(request)
 
 
-# Handle your warmup logic here, e.g. set up a database connection pool
-@app.route("/_ah/warmup")
-def warmup(ack:Ack):
-    ack()
+## Handle your warmup logic here, e.g. set up a database connection pool
+#@app.route("/_ah/warmup")
+#def warmup(ack:Ack):
+    #ack()
 
-    # retrieve slack channel list
+    ## retrieve slack channel list
+
+    #return "", 200, {}
+
+
+@app.route("/_ah/start")
+def spinup():
+    global dict_channel
+
     dict_channel = retrieve_channel_list()
 
+    # Google App Engine
+    return "", 200, {}
+
+
+@app.route("/_ah/stop")
+def spindown():
+
+    #dict_channel = retrieve_channel_list()
+
+    # Google App Engine
     return "", 200, {}
 
 ############ END Flask routes ############
