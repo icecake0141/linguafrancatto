@@ -15,7 +15,7 @@ import re
 import requests
 import time
 from flask import Flask, request
-from slack_bolt import App
+from slack_bolt import App, Ack
 from slack_bolt.adapter.flask import SlackRequestHandler
 from slack_sdk import WebClient
 from slack_sdk.errors import SlackApiError
@@ -135,7 +135,8 @@ def retrieve_channel_list():
 ############ Bolt handlers ############
 
 @bolt_app.message("Meousage")
-def usage(message, say):
+def usage(ack:Ack, message, say):
+    ack()
 
     # Check DeepL usage
     count, limit = deepl_usage()
@@ -144,13 +145,14 @@ def usage(message, say):
     say(f"{count} characters translated so far in the current billing purriod.\n"\
         + f"Current meowximum number of characters that can be translated per billing purriod is {limit}.\n"\
         + f"{count/limit*100:.2f} % used.")
-    say("Translation keyword:\n    Nyan:JP\n    Meow:EN\n   Miaou:FR\n  Мяу:RU")
+    say("Translation keyword:\n    Nyan:JP\n    Meow:EN\n    Miaou:FR\n    Мяу:RU")
 
     time.sleep(1)
 
 
 @bolt_app.message(re.compile("(Nyan|Meow|Miaou|Мяу)"))
-def translate(message, say, context):
+def ondemand_translate(ack: Ack, message, say, context):
+    ack()
 
     # Determine target language to be translated
     if re.match("Nyan",context['matches'][0]) :
@@ -176,9 +178,10 @@ def translate(message, say, context):
     time.sleep(1)
 
 
-# default catcher
+# catcher for multichannel translation
 @bolt_app.message("")
-def default(message, say):
+def multichannel_translate(ack: Ack, message, say):
+    ack()
 
     # Convert channel ID to channel name
     channelname = [k for k, v in dict_channel.items() if v == message['channel']][0]
@@ -187,7 +190,7 @@ def default(message, say):
     # where all conversations should be translated automatically.
     for channel_basename in list_channel_basename:
         # Check if the message is posted on specific channel name
-        if re.match(channel_basename, channelname):
+        if re.search(channel_basename, channelname):
             # retrieve username from userid
             speaker = client.users_info(user=message['user']).data['user']['name']
             # if it receives a message from designated channel, it populate translated messages to remaining channels
@@ -196,13 +199,15 @@ def default(message, say):
                 if channel == channelname:
                     pass
                 # determine translation target language based on suffix of chanel name (_en/_fr/nothing=jp)
-                elif re.match(channel_basename,channelname):
+                elif re.search(channel_basename,channelname):
                     if re.search("-en$",channel):
                         tr_to_lang = "EN"
                     elif re.search("-fr$",channel):
                         tr_to_lang = "FR"
                     elif re.match(channel_basename,channel):
                         tr_to_lang = "JA"
+                    else:
+                        continue
                     # Hit translation API
                     translated_text = deepl(message['text'],tr_to_lang)
                     # Post message
@@ -215,6 +220,10 @@ def default(message, say):
         # if not, do nothing since it is not a target channel of translation
         else:
             return
+
+
+#@bolt_app.message("")
+#def catch_all(message):
 
 
 @bolt_app.middleware  # or app.use(log_request)
@@ -243,7 +252,8 @@ def slack_events():
 
 # Handle your warmup logic here, e.g. set up a database connection pool
 @app.route("/_ah/warmup")
-def warmup():
+def warmup(ack:Ack):
+    ack()
 
     # retrieve slack channel list
     dict_channel = retrieve_channel_list()
