@@ -2,141 +2,262 @@
 # coding: utf-8
 
 # Linguafrancatto
-# Language translation bot powered by DeepL for Slack
+# Slack Language translation bot powered by DeepL / Slack Bolt SDK
+# icecake0141 / 2020
 
-### import
+# Reference
+# https://github.com/slackapi/bolt-python/blob/main/examples/google_app_engine/flask/main.py
+
+import json
+import logging
 import os
 import re
-import json
 import requests
 import time
-import pprint
-#from pprint import pprint
-from slack_sdk.rtm import RTMClient
+from flask import Flask, request
+from slack_bolt import App
+from slack_bolt.adapter.flask import SlackRequestHandler
+from slack_sdk import WebClient
+from slack_sdk.errors import SlackApiError
 
+############
 ###  global variables
+# Debug
+DEBUG = os.environ.get("DEBUG_MODE")
+
 # DeepL API
 url = "https://api.deepl.com/v2/translate"
-deepl_auth_key = os.environ["DEEPL_TOKEN"]
+url_usage = "https://api.deepl.com/v2/usage"
+deepl_auth_key = os.environ.get("DEEPL_TOKEN")
+#formality =os.environ.get("FORMALITY")
+
+# multi channel translation
+list_channel_basename = os.environ.get("MULTI_CHANNEL").split(",")
+
+# Slack channel list dict
+conversations_store = {}
+
+############
+############ Initialization ############
+# Initializes your app with your bot token and signing secret
+bolt_app = App(
+    token=os.environ.get("SLACK_BOT_TOKEN"),
+    signing_secret=os.environ.get("SLACK_SIGNING_SECRET")
+)
+
+# Instanciate WebClient
+client = WebClient(token=os.environ.get("SLACK_BOT_TOKEN"))
+
+# Instanciate WebClient
+app = Flask(__name__)
+handler = SlackRequestHandler(bolt_app)
 
 # Slack
-slack_token = os.environ["SLACK_BOT_TOKEN"]
-guardian_uid = os.environ["GUARDIAN_UID"]
 
-# bot name/id
-myid = ""
-myname = ""
+# Logging
+if DEBUG == "True":
+    logging.basicConfig(level=logging.DEBUG)
 
-###
-### Functions
+############ END Initialization ############
+############
 
-# handy time printer
-def get_time():
-  localtime = time.localtime()
-  result = time.strftime("%I:%M:%S %p", localtime)
-  return result
+############
+############ Function ############
 
-# report message to guardian
-def report_to_guardian(text, payload):
+### DeepL ###
+# Post DeepL translation API request
+def deepl(text, tr_to_lang):
 
-    web_client = payload['web_client']
-    channel_id = web_client.conversations_open(users=guardian_uid)['channel']['id']
+    # Hit text translation API
+    payload_req = {"auth_key":deepl_auth_key,"text":text, "target_lang":tr_to_lang, "tag_handling":"xml"}
+    r = requests.get(url, params=payload_req)
 
-    web_client.chat_postMessage(
-        channel = channel_id,
-        text = text
-    )
+    translated_text = json.loads(r.text)["translations"][0]["text"]
 
-###
-### RTM event functions
-
-# When an API request is accepted
-# Get and store bot's ID and name
-@RTMClient.run_on(event="open")
-def bot_initialization(**payload):
-
-    # import event data
-    data = payload['data']
-
-    text = json.dumps(pprint.pformat(data))
-    report_to_guardian(text, payload)
-
-    global myid
-    myid = data['self']['id']
-    global myname
-    myname = data['self']['name']
+    return translated_text
 
 
-# When connection to a slack space is established
-# Report to a guardian
-@RTMClient.run_on(event="hello")
-def report_status_after_connection(**payload):
+def deepl_usage():
 
-    text = "Hello, " + myname + " is up and running. " + get_time()
+    # Hit usage report API
+    payload_req = {"auth_key":deepl_auth_key}
+    r = requests.get(url_usage, params=payload_req)
 
-    report_to_guardian(text, payload)
+    count = json.loads(r.text)["character_count"]
+    limit = json.loads(r.text)["character_limit"]
+
+    return count, limit
 
 
-# When a new message is posted
-@RTMClient.run_on(event="message")
-def translate_message(**payload):
+### Slack ###
+# Fetch conversations using the conversations.list method
+def fetch_conversations(client, logger):
 
-    # import event data
-    data = payload['data']
+    try:
+        # Call the conversations.list method using the built-in WebClient
+        result = client.conversations_list()
+        save_conversations(result["channels"])
 
-    # Exit if the message is from any bots
-    if 'subtype' in data:
-        if data['subtype'] == 'bot_message':
-            return
+    except SlackApiError as e:
+        logger.error("Error fetching conversations: {}".format(e))
 
-    # import slack API info
-    web_client = payload['web_client']
 
-    if re.search('にゃん',data['text']) :
-        tr_to_lang = 'EN'
-    elif re.search('Meow',data['text']) :
-        tr_to_lang = 'JA'
-    elif re.search('Miaou',data['text']) :
-        tr_to_lang = 'JA'
-    elif re.search('мяу',data['text']) :
-        tr_to_lang = 'JA'
+# Put conversations into the JavaScript object
+def save_conversations(conversations):
+
+    conversation_id = ""
+    for conversation in conversations:
+        # Key conversation info on its unique ID
+        conversation_id = conversation["id"]
+
+        # Store the entire conversation object
+        # (you may not need all of the info)
+        conversations_store[conversation_id] = conversation
+
+
+# retrieve channel list and store to conversations_store
+def retrieve_channel_list():
+
+    dict_channel = {}
+    fetch_conversations(bolt_app.client, bolt_app.logger)
+
+    # extract channel name and channel id info
+    for x in conversations_store.keys():
+        dict_channel[conversations_store[x]['name']] = conversations_store[x]['id']
+    
+    # dict_channel = {'channel_name': 'channel_id'}
+    return dict_channel
+
+############ END Functions ############
+############
+
+############
+############ Bolt handlers ############
+
+@bolt_app.message("Meousage")
+def usage(message, say):
+
+    # Check DeepL usage
+    count, limit = deepl_usage()
+
+    # Post DeepL API usage
+    say(f"{count} characters translated so far in the current billing purriod.\n"\
+        + f"Current meowximum number of characters that can be translated per billing purriod is {limit}.\n"\
+        + f"{count/limit*100:.2f} % used.")
+    say("Translation keyword:\n    Nyan:JP\n    Meow:EN\n   Miaou:FR\n  Мяу:RU")
+
+    time.sleep(1)
+
+
+@bolt_app.message(re.compile("(Nyan|Meow|Miaou|Мяу)"))
+def translate(message, say, context):
+
+    # Determine target language to be translated
+    if re.match("Nyan",context['matches'][0]) :
+        tr_to_lang = "JA"
+    elif re.match("Meow",context['matches'][0]) :
+        tr_to_lang = "EN"
+    elif re.match("Miaou",context['matches'][0]) :
+        tr_to_lang = "FR"
+    elif re.match("Мяу",context['matches'][0]) :
+        tr_to_lang = "RU"
     else:
         return
 
-    # Post DeepL API request
-    payload_req = {"auth_key":deepl_auth_key,"text":data['text'], "target_lang":tr_to_lang}
-    r = requests.get(url, params=payload_req)
+    # Hit translation API
+    translated_text = deepl(message['text'],tr_to_lang)
 
-    # debug
-    text = json.dumps(pprint.pformat(r.text))
-    report_to_guardian(text, payload)
+    # retrieve username from userid
+    speaker = client.users_info(user=message['user']).data['user']['name']
 
-    translated_text = json.loads(r.text)["translations"][0]["text"]
-    original_message_id = payload['data']['client_msg_id']
+    # Post message
+    say(f"{speaker} said:\n{translated_text}")
 
-    # post message to Slack
-    channel_id = data['channel']
-    user_id = data['user']
-    user_name = web_client.users_info(
-        user = user_id
-    )['user']['name']
-
-    message = 'In message ' + original_message_id + ', ' + user_name + ' said:\n'
-    message += translated_text
-
-    web_client.chat_postMessage(
-        channel = channel_id,
-        text = message
-    )
     time.sleep(1)
 
-###
-### main
 
-# Create a RTM client license
-rtm_client = RTMClient(token=slack_token)
+# default catcher
+@bolt_app.message("")
+def default(message, say):
 
-# Establish a WebSocket connection with Slack.
-rtm_client.start()
+    # Convert channel ID to channel name
+    channelname = [k for k, v in dict_channel.items() if v == message['channel']][0]
 
-#rtm_client.stop()
+    # list_channel_basename contains a list of basename ("foobar" of foobar_en/foobar_fr/foobar) of channels,
+    # where all conversations should be translated automatically.
+    for channel_basename in list_channel_basename:
+        # Check if the message is posted on specific channel name
+        if re.match(channel_basename, channelname):
+            # retrieve username from userid
+            speaker = client.users_info(user=message['user']).data['user']['name']
+            # if it receives a message from designated channel, it populate translated messages to remaining channels
+            for channel in dict_channel:
+                # skip if channel names are the same = it is the channel the message was originally posted
+                if channel == channelname:
+                    pass
+                # determine translation target language based on suffix of chanel name (_en/_fr/nothing=jp)
+                elif re.match(channel_basename,channelname):
+                    if re.search("-en$",channel):
+                        tr_to_lang = "EN"
+                    elif re.search("-fr$",channel):
+                        tr_to_lang = "FR"
+                    elif re.match(channel_basename,channel):
+                        tr_to_lang = "JA"
+                    # Hit translation API
+                    translated_text = deepl(message['text'],tr_to_lang)
+                    # Post message
+                    say(channel=dict_channel[channel],text=f"{speaker} said:\n{translated_text}")
+                else:
+                    pass
+
+            time.sleep(1)
+            return
+        # if not, do nothing since it is not a target channel of translation
+        else:
+            return
+
+
+@bolt_app.middleware  # or app.use(log_request)
+def log_request(logger, body, next):
+    logger.debug(body)
+    return next()
+
+
+# error handling
+@bolt_app.error
+def custom_error_handler(error, body, logger):
+    logger.exception(f"Error: {error}")
+    logger.info(f"Request body: {body}")
+
+############ END Bolt handlers ############
+############
+
+############
+############ Flask routes ############
+
+# Call bolt handler
+@app.route("/slack/events", methods=["POST"])
+def slack_events():
+    return handler.handle(request)
+
+
+# Handle your warmup logic here, e.g. set up a database connection pool
+@app.route("/_ah/warmup")
+def warmup():
+
+    # retrieve slack channel list
+    dict_channel = retrieve_channel_list()
+
+    return "", 200, {}
+
+############ END Flask routes ############
+############
+
+############
+############ MAIN ############
+if __name__ == "__main__":
+
+    # retrieve slack channel list
+    dict_channel = retrieve_channel_list()
+
+    app.run(debug=os.environ.get("DEBUG_MODE"), port=int(os.environ.get("PORT", 3000)))

@@ -1,3 +1,5 @@
+env_variables.yaml
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]

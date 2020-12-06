@@ -1,0 +1,14 @@
+runtime: python38
+
+instance_class: B1
+
+manual_scaling:
+  instances: 1
+
+handlers:
+  - url: /slack/events
+    secure: always
+    script: auto
+
+includes:
+  - env_variables.yaml
