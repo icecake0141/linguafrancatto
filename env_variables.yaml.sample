@@ -12,3 +12,4 @@ env_variables:
   SECRET_VERSION: '0'
 # Debug mode True / False
   DEBUG_MODE: "True"
+  MULTI_CHANNEL: "channel1,channel2"
