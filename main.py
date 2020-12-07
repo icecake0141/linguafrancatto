@@ -1,14 +1,11 @@
 #!/usr/bin/env python3
 # coding: utf-8
 
-# Linguafrancatto
+# Linguafrancatto v2.1
 # Slack Language translation bot powered by DeepL / Slack Bolt SDK
 # icecake0141 / 2020
+# https://github.com/icecake0141/linguafrancatto 
 
-# Reference
-# https://github.com/slackapi/bolt-python/blob/main/examples/google_app_engine/flask/main.py
-
-import json
 import logging
 import os
 import re
@@ -22,7 +19,7 @@ from slack_sdk.errors import SlackApiError
 
 ##################################
 # Google App Engie debugger
-# Enable this if you want to debut on GaE
+# Enable this if you want to debug on GaE
 #try:
 #    import googleclouddebugger
 #    googleclouddebugger.enable(
