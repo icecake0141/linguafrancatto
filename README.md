@@ -51,11 +51,11 @@ TBD
 
 ## Resources
 
-[Deepl API](https://www.deepl.com/docs-api/introduction/)
-[Slack API](https://api.slack.com/)
-[Slack Bolt for Python](https://slack.dev/bolt-python/tutorial/getting-started)
-[slack Bolt with GaE and Flask](https://github.com/slackapi/bolt-python/blob/main/examples/google_app_engine/flask/main.py)
-[Google App Engine](https://cloud.google.com/appengine/docs/standard/python3/runtime)
+* [Deepl API](https://www.deepl.com/docs-api/introduction/)
+* [Slack API](https://api.slack.com/)
+* [Slack Bolt for Python](https://slack.dev/bolt-python/tutorial/getting-started)
+* [slack Bolt with GaE and Flask](https://github.com/slackapi/bolt-python/blob/main/examples/google_app_engine/flask/main.py)
+* [Google App Engine](https://cloud.google.com/appengine/docs/standard/python3/runtime)
 
 
 ## License
