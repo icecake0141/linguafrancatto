@@ -6,10 +6,11 @@ env_variables:
   SLACK_BOT_TOKEN: "xxxx"
 # Slack UID of bot admin
   GUARDIAN_UID: "xxxx"
-# Google Secret Manage information
+# Google Secret Manager information
   PROJECT_ID: "sample-project"
   SECRET_NAME: "sample"
   SECRET_VERSION: '0'
 # Debug mode True / False
-  DEBUG_MODE: "True"
+  DEBUG_MODE: "False"
+# list of slack channel basename that need continuous translation
   MULTI_CHANNEL: "channel1,channel2"
