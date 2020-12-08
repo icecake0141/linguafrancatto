@@ -6,6 +6,7 @@
 # icecake0141 / 2020
 # https://github.com/icecake0141/linguafrancatto 
 
+import json
 import logging
 import os
 import re
