@@ -67,7 +67,8 @@ try:
     channels = client.conversations_list()['channels']
 
 except SlackApiError as e:
-    logger.error("Error fetching conversations: {}".format(e))
+    logging.error("Error fetching conversations: {}".format(e))
+    #logger.error("Error fetching conversations: {}".format(e))
 
 name_dict, id_dict = {},{}
 for i in channels:
