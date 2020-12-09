@@ -113,7 +113,8 @@ def deepl_usage():
 ### Dirty hack of slack formatting ###
 def replace_markdown(text_block):
     
-    text_block = re.sub(">","<bq></bq>",text_block)
+    text_block = re.sub("<","&lt;",text_block)
+    text_block = re.sub(">","&gt;",text_block)
     text_block = re.sub("\*","<bd></bd>",text_block)
     # Slack treat bullet point as bullet point....
     text_block = re.sub("•","<ls></ls>",text_block)
@@ -133,7 +134,8 @@ def revert_markdown(text_block):
     text_block = re.sub("<st></st>","~",text_block)
     text_block = re.sub("<cb></cb>","```",text_block)
     text_block = re.sub("<cd></cd>","`",text_block)
-    text_block = re.sub("<bq></bq>",">",text_block)
+    text_block = re.sub("&lt;","<",text_block)
+    text_block = re.sub("&gt;",">",text_block)
 
     return text_block
 
