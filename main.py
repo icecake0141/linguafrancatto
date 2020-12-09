@@ -41,12 +41,6 @@ url_usage = "https://api.deepl.com/v2/usage"
 deepl_auth_key = os.environ.get("DEEPL_TOKEN")
 #formality =os.environ.get("FORMALITY")
 
-# multi channel translation
-list_channel_basename = os.environ.get("MULTI_CHANNEL").split(",")
-
-# Slack channel list dict
-conversations_store = {}
-dict_channel = {}
 
 ############
 ############ Initialization ############
@@ -64,6 +58,23 @@ app = Flask(__name__)
 handler = SlackRequestHandler(bolt_app)
 
 # Slack
+# multi channel translation
+list_channel_basename = os.environ.get("MULTI_CHANNEL").split(",")
+
+# retrieve channel object from Slack API
+try:
+    # Call the conversations.list method using the built-in WebClient
+    channels = client.conversations_list()['channels']
+
+except SlackApiError as e:
+    logger.error("Error fetching conversations: {}".format(e))
+
+name_dict, id_dict = {},{}
+for i in channels:
+    name_dict[i['name']] = i['id']
+    id_dict[i['id']] = i['name']
+# not good way :(
+del i
 
 # Logging
 if DEBUG == "True":
@@ -101,43 +112,6 @@ def deepl_usage():
 
 
 ### Slack ###
-# Fetch conversations using the conversations.list method
-def fetch_conversations(client, logger):
-
-    try:
-        # Call the conversations.list method using the built-in WebClient
-        result = client.conversations_list()
-        save_conversations(result["channels"])
-
-    except SlackApiError as e:
-        logger.error("Error fetching conversations: {}".format(e))
-
-
-# Put conversations into the JavaScript object
-def save_conversations(conversations):
-
-    conversation_id = ""
-    for conversation in conversations:
-        # Key conversation info on its unique ID
-        conversation_id = conversation["id"]
-
-        # Store the entire conversation object
-        # (you may not need all of the info)
-        conversations_store[conversation_id] = conversation
-
-
-# retrieve channel list and store to conversations_store
-def retrieve_channel_list():
-
-    channeldict = {}
-    fetch_conversations(bolt_app.client, bolt_app.logger)
-
-    # extract channel name and channel id info
-    for x in conversations_store.keys():
-        channeldict[conversations_store[x]['name']] = conversations_store[x]['id']
-    
-    # dict_channel = {'channel_name': 'channel_id'}
-    return channeldict
 
 ############ END Functions ############
 ############
@@ -196,7 +170,7 @@ def multichannel_translate(ack: Ack, message, say):
     ack()
 
     # Convert channel ID to channel name
-    channelname = [k for k, v in dict_channel.items() if v == message['channel']][0]
+    channelname = id_dict[message['channel']]
 
     # list_channel_basename contains a list of basename ("foobar" of foobar_en/foobar_fr/foobar) of channels,
     # where all conversations should be translated automatically.
@@ -206,24 +180,24 @@ def multichannel_translate(ack: Ack, message, say):
             # retrieve username from userid
             speaker = client.users_info(user=message['user']).data['user']['name']
             # if it receives a message from designated channel, it populate translated messages to remaining channels
-            for channel in dict_channel:
+            for i in name_dict:
                 # skip if channel names are the same = it is the channel the message was originally posted
-                if channel == channelname:
+                if i == channelname:
                     pass
                 # determine translation target language based on suffix of chanel name (_en/_fr/nothing=jp)
-                elif re.search(channel_basename,channelname):
-                    if re.search("-en$",channel):
+                elif re.search(channel_basename,i):
+                    if re.search("-en$",i):
                         tr_to_lang = "EN"
-                    elif re.search("-fr$",channel):
+                    elif re.search("-fr$",i):
                         tr_to_lang = "FR"
-                    elif re.match(channel_basename,channel):
+                    elif re.match(channel_basename,i):
                         tr_to_lang = "JA"
                     else:
                         continue
                     # Hit translation API
                     translated_text = deepl(message['text'],tr_to_lang)
                     # Post message
-                    say(channel=dict_channel[channel],text=f"{speaker} said:\n{translated_text}")
+                    say(channel=name_dict[i],text=f"{speaker} said:\n{translated_text}")
                 else:
                     pass
 
@@ -267,16 +241,11 @@ def slack_events():
 #def warmup(ack:Ack):
     #ack()
 
-    ## retrieve slack channel list
-
     #return "", 200, {}
 
 
 @app.route("/_ah/start")
 def spinup():
-    global dict_channel
-
-    dict_channel = retrieve_channel_list()
 
     # Google App Engine
     return "", 200, {}
@@ -284,8 +253,6 @@ def spinup():
 
 @app.route("/_ah/stop")
 def spindown():
-
-    #dict_channel = retrieve_channel_list()
 
     # Google App Engine
     return "", 200, {}
@@ -296,8 +263,5 @@ def spindown():
 ############
 ############ MAIN ############
 if __name__ == "__main__":
-
-    # retrieve slack channel list
-    dict_channel = retrieve_channel_list()
 
     app.run(debug=os.environ.get("DEBUG_MODE"), port=int(os.environ.get("PORT", 3000)))
