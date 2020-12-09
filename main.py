@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-# coding: utf-8
 
 # Linguafrancatto v2.1
 # Slack Language translation bot powered by DeepL / Slack Bolt SDK
