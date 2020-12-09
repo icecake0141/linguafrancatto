@@ -111,6 +111,18 @@ def deepl_usage():
 
     return count, limit
 
+### Text manipulation ###
+def replace_markdown(text_block):
+    
+    for i in text_block.readline():
+        result 
+
+    return result 
+
+def revert_markdown(text_block):
+    return result
+
+### END Text manipulation ###
 
 ### Slack ###
 
@@ -165,8 +177,11 @@ def ondemand_translate(ack: Ack, message, say, context):
     time.sleep(1)
 
 
+@bolt_app.event('message', subtype('channel_join')
+def
+
 # catcher for multichannel translation
-@bolt_app.message("")
+@bolt_app.event({"type": "message", "subtype": None})
 def multichannel_translate(ack: Ack, message, say):
     ack()
 
