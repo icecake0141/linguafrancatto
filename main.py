@@ -111,16 +111,32 @@ def deepl_usage():
 
     return count, limit
 
-### Text manipulation ###
+### Dirty hack of slack formatting ###
 def replace_markdown(text_block):
     
-    for i in text_block.readline():
-        result 
+    text_block = re.sub(">","<bq></bq>",text_block)
+    text_block = re.sub("\*","<bd></bd>",text_block)
+    # Slack treat bullet point as bullet point....
+    text_block = re.sub("•","<ls></ls>",text_block)
+    text_block = re.sub("_","<it></it>",text_block)
+    text_block = re.sub("~","<st></st>",text_block)
+    text_block = re.sub("```","<cb></cb>",text_block)
+    text_block = re.sub("`","<cd></cd>",text_block)
 
-    return result 
+    return text_block
 
 def revert_markdown(text_block):
-    return result
+
+    text_block = re.sub("<bd></bd>","*",text_block)
+    # Slack treat bullet point as bullet point....
+    text_block = re.sub("<ls></ls>","•",text_block)
+    text_block = re.sub("<it></it>","_",text_block)
+    text_block = re.sub("<st></st>","~",text_block)
+    text_block = re.sub("<cb></cb>","```",text_block)
+    text_block = re.sub("<cd></cd>","`",text_block)
+    text_block = re.sub("<bq></bq>",">",text_block)
+
+    return text_block
 
 ### END Text manipulation ###
 
@@ -166,19 +182,16 @@ def ondemand_translate(ack: Ack, message, say, context):
         return
 
     # Hit translation API
-    translated_text = deepl(message['text'],tr_to_lang)
+    translated_text = deepl(replace_markdown(message['text']),tr_to_lang)
 
     # retrieve username from userid
     speaker = client.users_info(user=message['user']).data['user']['name']
 
     # Post message
-    say(f"{speaker} said:\n{translated_text}")
+    say(f"{speaker} said:\n{revert_markdown(translated_text)}")
 
     time.sleep(1)
 
-
-@bolt_app.event('message', subtype('channel_join')
-def
 
 # catcher for multichannel translation
 @bolt_app.event({"type": "message", "subtype": None})
