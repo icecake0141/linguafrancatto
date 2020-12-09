@@ -224,9 +224,11 @@ def multichannel_translate(ack: Ack, message, say):
                     else:
                         continue
                     # Hit translation API
-                    translated_text = deepl(message['text'],tr_to_lang)
+                    translated_text = deepl(replace_markdown(message['text']),tr_to_lang)
+
                     # Post message
-                    say(channel=name_dict[i],text=f"{speaker} said:\n{translated_text}")
+                    say(channel=name_dict[i],text=f"{speaker} said:\n{revert_markdown(translated_text)}")
+
                 else:
                     pass
 
