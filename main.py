@@ -60,6 +60,7 @@ handler = SlackRequestHandler(bolt_app)
 # multi channel translation
 list_channel_basename = os.environ.get("MULTI_CHANNEL").split(",")
 
+channels = []
 # retrieve channel object from Slack API
 try:
     # Call the conversations.list method using the built-in WebClient
