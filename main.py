@@ -63,7 +63,8 @@ list_channel_basename = os.environ.get("MULTI_CHANNEL").split(",")
 # retrieve channel object from Slack API
 try:
     # Call the conversations.list method using the built-in WebClient
-    channels = client.conversations_list()['channels']
+    for paginated_response in client.conversations_list(limit=10):
+        channels += paginated_response['channels']
 
 except SlackApiError as e:
     logging.error("Error fetching conversations: {}".format(e))
