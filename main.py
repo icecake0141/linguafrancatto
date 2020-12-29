@@ -239,11 +239,23 @@ def multichannel_translate(ack: Ack, message, say):
             return
         # if not, do nothing since it is not a target channel of translation
         else:
-            return
+            pass
+
+    return
+
+@bolt_app.event({"type": "message", "subtype": "message_deleted"})
+def messaage_deleted(ack: Ack, message):
+    ack()
 
 
-#@bolt_app.message("")
-#def catch_all(message):
+@bolt_app.event({"type": "message", "subtype": "message_changed"})
+def messaage_changed(ack: Ack, message):
+    ack()
+
+
+@bolt_app.message("")
+def catch_all(message):
+    ack()
 
 
 @bolt_app.middleware  # or app.use(log_request)
