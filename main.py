@@ -7,13 +7,11 @@
 # Linguafrancatto v2.1
 # Slack Language translation bot powered by DeepL / Slack Bolt SDK
 # icecake0141 / 2020
-# https://github.com/icecake0141/linguafrancatto 
+# https://github.com/icecake0141/linguafrancatto
 
-import json
 import logging
 import os
 import re
-import requests
 import time
 from flask import Flask, request
 from slack_bolt import App, Ack
@@ -27,12 +25,12 @@ from deepl_client import DeeplClientError
 ##################################
 # Google App Engie debugger
 # Enable this if you want to debug on GaE
-#try:
+# try:
 #    import googleclouddebugger
 #    googleclouddebugger.enable(
 #        breakpoint_enable_canary=False
 #    )
-#except ImportError:
+# except ImportError:
 #    pass
 
 
@@ -45,7 +43,7 @@ DEBUG = os.environ.get("DEBUG_MODE")
 url = "https://api.deepl.com/v2/translate"
 url_usage = "https://api.deepl.com/v2/usage"
 deepl_auth_key = os.environ.get("DEEPL_TOKEN")
-#formality =os.environ.get("FORMALITY")
+# formality =os.environ.get("FORMALITY")
 
 
 ############
@@ -53,7 +51,7 @@ deepl_auth_key = os.environ.get("DEEPL_TOKEN")
 # Initializes your app with your bot token and signing secret
 bolt_app = App(
     token=os.environ.get("SLACK_BOT_TOKEN"),
-    signing_secret=os.environ.get("SLACK_SIGNING_SECRET")
+    signing_secret=os.environ.get("SLACK_SIGNING_SECRET"),
 )
 
 # Instanciate WebClient
@@ -72,16 +70,16 @@ channels = []
 try:
     # Call the conversations.list method using the built-in WebClient
     for paginated_response in client.conversations_list(limit=10):
-        channels += paginated_response['channels']
+        channels += paginated_response["channels"]
 
 except SlackApiError as e:
     logging.error("Error fetching conversations: {}".format(e))
-    #logger.error("Error fetching conversations: {}".format(e))
+    # logger.error("Error fetching conversations: {}".format(e))
 
-name_dict, id_dict = {},{}
+name_dict, id_dict = {}, {}
 for i in channels:
-    name_dict[i['name']] = i['id']
-    id_dict[i['id']] = i['name']
+    name_dict[i["name"]] = i["id"]
+    id_dict[i["id"]] = i["name"]
 # not good way :(
 del i
 
@@ -95,19 +93,20 @@ if DEBUG == "True":
 ############
 ############ Function ############
 
+
 ### DeepL ###
 # Post DeepL translation API request
 def deepl(text, tr_to_lang):
     """
     Translate text using DeepL API via the robust client.
-    
+
     Args:
         text: Text to translate
         tr_to_lang: Target language code
-    
+
     Returns:
         Translated text
-    
+
     Raises:
         DeeplClientError: If translation fails
     """
@@ -117,43 +116,46 @@ def deepl(text, tr_to_lang):
 def deepl_usage():
     """
     Get DeepL API usage statistics via the robust client.
-    
+
     Returns:
         Tuple of (character_count, character_limit)
-    
+
     Raises:
         DeeplClientError: If usage retrieval fails
     """
     return deepl_client.get_usage(deepl_auth_key)
 
+
 ### Dirty hack of slack formatting ###
 def replace_markdown(text_block):
-    
-    text_block = re.sub("<","&lt;",text_block)
-    text_block = re.sub(">","&gt;",text_block)
-    text_block = re.sub("\*","<bd></bd>",text_block)
+
+    text_block = re.sub("<", "&lt;", text_block)
+    text_block = re.sub(">", "&gt;", text_block)
+    text_block = re.sub("\*", "<bd></bd>", text_block)
     # Slack treat bullet point as bullet point....
-    text_block = re.sub("•","<ls></ls>",text_block)
-    text_block = re.sub("_","<it></it>",text_block)
-    text_block = re.sub("~","<st></st>",text_block)
-    text_block = re.sub("```","<cb></cb>",text_block)
-    text_block = re.sub("`","<cd></cd>",text_block)
+    text_block = re.sub("•", "<ls></ls>", text_block)
+    text_block = re.sub("_", "<it></it>", text_block)
+    text_block = re.sub("~", "<st></st>", text_block)
+    text_block = re.sub("```", "<cb></cb>", text_block)
+    text_block = re.sub("`", "<cd></cd>", text_block)
 
     return text_block
+
 
 def revert_markdown(text_block):
 
-    text_block = re.sub("<bd></bd>","*",text_block)
+    text_block = re.sub("<bd></bd>", "*", text_block)
     # Slack treat bullet point as bullet point....
-    text_block = re.sub("<ls></ls>","•",text_block)
-    text_block = re.sub("<it></it>","_",text_block)
-    text_block = re.sub("<st></st>","~",text_block)
-    text_block = re.sub("<cb></cb>","```",text_block)
-    text_block = re.sub("<cd></cd>","`",text_block)
-    text_block = re.sub("&lt;","<",text_block)
-    text_block = re.sub("&gt;",">",text_block)
+    text_block = re.sub("<ls></ls>", "•", text_block)
+    text_block = re.sub("<it></it>", "_", text_block)
+    text_block = re.sub("<st></st>", "~", text_block)
+    text_block = re.sub("<cb></cb>", "```", text_block)
+    text_block = re.sub("<cd></cd>", "`", text_block)
+    text_block = re.sub("&lt;", "<", text_block)
+    text_block = re.sub("&gt;", ">", text_block)
 
     return text_block
+
 
 ### END Text manipulation ###
 
@@ -167,7 +169,7 @@ def revert_markdown(text_block):
 
 
 @bolt_app.message("Meousage")
-def usage(ack:Ack, message, say):
+def usage(ack: Ack, message, say):
     ack()
 
     try:
@@ -175,9 +177,11 @@ def usage(ack:Ack, message, say):
         count, limit = deepl_usage()
 
         # Post DeepL API usage
-        say(f"{count} characters translated so far in the current billing purriod.\n"\
-            + f"Current meowximum number of characters that can be translated per billing purriod is {limit}.\n"\
-            + f"{count/limit*100:.2f} % used.")
+        say(
+            f"{count} characters translated so far in the current billing purriod.\n"
+            + f"Current meowximum number of characters that can be translated per billing purriod is {limit}.\n"
+            + f"{count/limit*100:.2f} % used."
+        )
         say("Translation keyword:\n    Nyan:JP\n    Meow:EN\n    Miaou:FR\n    Мяу:RU")
     except DeeplClientError as e:
         logging.error(f"Failed to retrieve DeepL usage: {type(e).__name__}")
@@ -194,23 +198,23 @@ def ondemand_translate(ack: Ack, message, say, context):
     ack()
 
     # Determine target language to be translated
-    if re.match("Nyan",context['matches'][0]) :
+    if re.match("Nyan", context["matches"][0]):
         tr_to_lang = "JA"
-    elif re.match("Meow",context['matches'][0]) :
+    elif re.match("Meow", context["matches"][0]):
         tr_to_lang = "EN"
-    elif re.match("Miaou",context['matches'][0]) :
+    elif re.match("Miaou", context["matches"][0]):
         tr_to_lang = "FR"
-    elif re.match("Мяу",context['matches'][0]) :
+    elif re.match("Мяу", context["matches"][0]):
         tr_to_lang = "RU"
     else:
         return
 
     try:
         # Hit translation API
-        translated_text = deepl(replace_markdown(message['text']),tr_to_lang)
+        translated_text = deepl(replace_markdown(message["text"]), tr_to_lang)
 
         # retrieve username from userid
-        speaker = client.users_info(user=message['user']).data['user']['name']
+        speaker = client.users_info(user=message["user"]).data["user"]["name"]
 
         # Post message
         say(f"{speaker} said:\n{revert_markdown(translated_text)}")
@@ -230,7 +234,7 @@ def multichannel_translate(ack: Ack, message, say):
     ack()
 
     # Convert channel ID to channel name
-    channelname = id_dict[message['channel']]
+    channelname = id_dict[message["channel"]]
 
     # list_channel_basename contains a list of basename ("foobar" of foobar_en/foobar_fr/foobar) of channels,
     # where all conversations should be translated automatically.
@@ -238,34 +242,43 @@ def multichannel_translate(ack: Ack, message, say):
         # Check if the message is posted on specific channel name
         if re.search(channel_basename, channelname):
             # retrieve username from userid
-            speaker = client.users_info(user=message['user']).data['user']['name']
+            speaker = client.users_info(user=message["user"]).data["user"]["name"]
             # if it receives a message from designated channel, it populate translated messages to remaining channels
             for i in name_dict:
                 # skip if channel names are the same = it is the channel the message was originally posted
                 if i == channelname:
                     pass
                 # determine translation target language based on suffix of chanel name (_en/_fr/nothing=jp)
-                elif re.search(channel_basename,i):
-                    if re.search("-en$",i):
+                elif re.search(channel_basename, i):
+                    if re.search("-en$", i):
                         tr_to_lang = "EN"
-                    elif re.search("-fr$",i):
+                    elif re.search("-fr$", i):
                         tr_to_lang = "FR"
-                    elif re.match(channel_basename,i):
+                    elif re.match(channel_basename, i):
                         tr_to_lang = "JA"
                     else:
                         continue
-                    
+
                     try:
                         # Hit translation API
-                        translated_text = deepl(replace_markdown(message['text']),tr_to_lang)
+                        translated_text = deepl(
+                            replace_markdown(message["text"]), tr_to_lang
+                        )
 
                         # Post message
-                        say(channel=name_dict[i],text=f"{speaker} said:\n{revert_markdown(translated_text)}")
+                        say(
+                            channel=name_dict[i],
+                            text=f"{speaker} said:\n{revert_markdown(translated_text)}",
+                        )
                     except DeeplClientError as e:
-                        logging.error(f"Failed to translate multichannel message: {type(e).__name__}")
+                        logging.error(
+                            f"Failed to translate multichannel message: {type(e).__name__}"
+                        )
                         # Don't post error to other channels, just log it
                     except Exception as e:
-                        logging.error(f"Unexpected error in multichannel translation: {type(e).__name__}")
+                        logging.error(
+                            f"Unexpected error in multichannel translation: {type(e).__name__}"
+                        )
 
                 else:
                     pass
@@ -278,6 +291,7 @@ def multichannel_translate(ack: Ack, message, say):
 
     return
 
+
 @bolt_app.event({"type": "message", "subtype": "message_deleted"})
 def messaage_deleted(ack: Ack, message):
     ack()
@@ -289,7 +303,7 @@ def messaage_changed(ack: Ack, message):
 
 
 @bolt_app.message("")
-def catch_all(message):
+def catch_all(ack: Ack, message):
     ack()
 
 
@@ -305,11 +319,13 @@ def custom_error_handler(error, body, logger):
     logger.exception(f"Error: {error}")
     logger.info(f"Request body: {body}")
 
+
 ############ END Bolt handlers ############
 ############
 
 ############
 ############ Flask routes ############
+
 
 # Call bolt handler
 @app.route("/slack/events", methods=["POST"])
@@ -318,11 +334,11 @@ def slack_events():
 
 
 ## Handle your warmup logic here, e.g. set up a database connection pool
-#@app.route("/_ah/warmup")
-#def warmup(ack:Ack):
-    #ack()
+# @app.route("/_ah/warmup")
+# def warmup(ack:Ack):
+# ack()
 
-    #return "", 200, {}
+# return "", 200, {}
 
 
 @app.route("/_ah/start")
@@ -337,6 +353,7 @@ def spindown():
 
     # Google App Engine
     return "", 200, {}
+
 
 ############ END Flask routes ############
 ############
