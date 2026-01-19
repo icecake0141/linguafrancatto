@@ -36,7 +36,7 @@ jobs:
       run: |
         echo "Checking for SPDX license headers in Python files..."
         failed=0
-        for file in $(find . -name "*.py" -not -path "./venv/*" -not -path "./.venv/*" -not -path "*/site-packages/*"); do
+        for file in $(find . -name "*.py" -not -path "./venv/*" -not -path "./.venv/*" -not -path "*/site-packages/*" -not -path "*/__pycache__/*" -not -path "*/build/*" -not -path "*/dist/*"); do
           if ! grep -q "SPDX-License-Identifier:" "$file"; then
             echo "❌ Missing SPDX license header in: $file"
             failed=1
