@@ -128,7 +128,7 @@ def get_usage(auth_key: str, timeout: int = 10) -> Tuple[int, int]:
         total=3,
         backoff_factor=0.5,
         status_forcelist=[429, 500, 502, 503, 504],
-        allowed_methods=["POST", "GET"],
+        allowed_methods=["POST"],
     )
 
     # Create session with retry adapter
