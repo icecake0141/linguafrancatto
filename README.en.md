@@ -161,7 +161,33 @@ ruff check .
 
 ### Testing
 
-This project currently has no automated tests. For manual testing, send actual messages in a Slack workspace to verify functionality.
+This project includes automated unit tests.
+
+To run tests:
+
+```sh
+# Ensure test dependencies are installed
+pip install -r requirements.txt
+
+# Run all tests
+pytest
+
+# Run tests with coverage report
+pytest --cov=main --cov-report=html
+
+# Run a specific test class
+pytest tests/test_main.py::TestMarkdownFunctions -v
+
+# Run a specific test
+pytest tests/test_main.py::TestMarkdownFunctions::test_replace_markdown_bold -v
+```
+
+Tests include:
+- Markdown conversion function tests (`replace_markdown`, `revert_markdown`)
+- DeepL API function tests (with mocking)
+- Flask endpoint tests
+
+For manual testing, send actual messages in a Slack workspace to verify functionality.
 
 ## Security
 
