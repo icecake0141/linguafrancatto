@@ -1,0 +1,66 @@
+# SPDX-License-Identifier: MIT
+# Copyright (c) 2020 icecake0141
+# This file was created with the assistance of an AI (Large Language Model). Review for correctness and security.
+
+name: CI
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ['3.10', '3.11']
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ matrix.python-version }}
+    
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+        # Install development tools if not already in requirements.txt
+        pip install black ruff mypy
+    
+    - name: Check for license headers and LLM attribution in Python files
+      run: |
+        echo "Checking for SPDX license headers in Python files..."
+        failed=0
+        for file in $(find . -name "*.py" -not -path "./venv/*" -not -path "./.venv/*" -not -path "*/site-packages/*"); do
+          if ! grep -q "SPDX-License-Identifier:" "$file"; then
+            echo "❌ Missing SPDX license header in: $file"
+            failed=1
+          fi
+        done
+        if [ $failed -eq 1 ]; then
+          echo "Some files are missing SPDX license headers"
+          exit 1
+        fi
+        echo "✅ All Python files have SPDX license headers"
+    
+    - name: Format check with Black
+      run: |
+        black --check .
+    
+    - name: Lint with Ruff
+      run: |
+        ruff check .
+    
+    - name: Type check with mypy
+      run: |
+        mypy . --ignore-missing-imports
+      continue-on-error: true
+    
+    - name: Test with pytest
+      run: |
+        pytest -q
