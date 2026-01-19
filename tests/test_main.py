@@ -27,8 +27,10 @@ class TestMarkdownFunctions:
         """Test that asterisks are replaced with bold tags"""
         text = "This is *bold* text"
         result = main.replace_markdown(text)
+        # Each asterisk is replaced with the tag
         assert "<bd></bd>" in result
         assert "*" not in result
+        assert result == "This is <bd></bd>bold<bd></bd> text"
     
     def test_replace_markdown_italic(self):
         """Test that underscores are replaced with italic tags"""
@@ -84,38 +86,53 @@ class TestMarkdownFunctions:
     
     def test_revert_markdown_bold(self):
         """Test that bold tags are reverted to asterisks"""
-        text = "This is <bd></bd>bold<bd></bd> text"
-        result = main.revert_markdown(text)
+        # Use actual output from replace_markdown
+        original = "This is *bold* text"
+        replaced = main.replace_markdown(original)
+        result = main.revert_markdown(replaced)
         assert "*" in result
         assert "<bd></bd>" not in result
+        assert result == original
     
     def test_revert_markdown_italic(self):
         """Test that italic tags are reverted to underscores"""
-        text = "This is <it></it>italic<it></it> text"
-        result = main.revert_markdown(text)
+        # Use actual output from replace_markdown
+        original = "This is _italic_ text"
+        replaced = main.replace_markdown(original)
+        result = main.revert_markdown(replaced)
         assert "_" in result
         assert "<it></it>" not in result
+        assert result == original
     
     def test_revert_markdown_strikethrough(self):
         """Test that strikethrough tags are reverted to tildes"""
-        text = "This is <st></st>strikethrough<st></st> text"
-        result = main.revert_markdown(text)
+        # Use actual output from replace_markdown
+        original = "This is ~strikethrough~ text"
+        replaced = main.replace_markdown(original)
+        result = main.revert_markdown(replaced)
         assert "~" in result
         assert "<st></st>" not in result
+        assert result == original
     
     def test_revert_markdown_code_block(self):
         """Test that code block tags are reverted to triple backticks"""
-        text = "This is <cb></cb>code block<cb></cb> text"
-        result = main.revert_markdown(text)
+        # Use actual output from replace_markdown
+        original = "This is ```code block``` text"
+        replaced = main.replace_markdown(original)
+        result = main.revert_markdown(replaced)
         assert "```" in result
         assert "<cb></cb>" not in result
+        assert result == original
     
     def test_revert_markdown_inline_code(self):
         """Test that inline code tags are reverted to backticks"""
-        text = "This is <cd></cd>inline code<cd></cd> text"
-        result = main.revert_markdown(text)
+        # Use actual output from replace_markdown
+        original = "This is `inline code` text"
+        replaced = main.replace_markdown(original)
+        result = main.revert_markdown(replaced)
         assert "`" in result
         assert "<cd></cd>" not in result
+        assert result == original
     
     def test_revert_markdown_list_symbol(self):
         """Test that list tags are reverted to bullet points"""
