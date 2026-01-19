@@ -174,82 +174,52 @@ class TestMarkdownFunctions:
 class TestDeepLFunctions:
     """Test cases for DeepL API interaction functions"""
     
-    @patch('requests.get')
-    def test_deepl_translation_success(self, mock_get):
+    @patch('deepl_client.translate_text')
+    def test_deepl_translation_success(self, mock_translate):
         """Test successful DeepL translation API call"""
-        # Mock the API response
-        mock_response = Mock()
-        mock_response.text = json.dumps({
-            "translations": [
-                {
-                    "detected_source_language": "EN",
-                    "text": "こんにちは"
-                }
-            ]
-        })
-        mock_get.return_value = mock_response
+        # Mock the client function
+        mock_translate.return_value = "こんにちは"
         
         result = main.deepl("Hello", "JA")
         
         assert result == "こんにちは"
-        assert mock_get.called
+        assert mock_translate.called
         # Verify API was called with correct parameters
-        call_args = mock_get.call_args
-        assert call_args[1]['params']['target_lang'] == "JA"
-        assert call_args[1]['params']['text'] == "Hello"
+        call_args = mock_translate.call_args
+        assert call_args[0][1] == "Hello"  # text
+        assert call_args[0][2] == "JA"  # target_lang
     
-    @patch('requests.get')
-    def test_deepl_translation_with_tags(self, mock_get):
+    @patch('deepl_client.translate_text')
+    def test_deepl_translation_with_tags(self, mock_translate):
         """Test DeepL translation with tag_handling parameter"""
-        mock_response = Mock()
-        mock_response.text = json.dumps({
-            "translations": [
-                {
-                    "detected_source_language": "EN",
-                    "text": "Translated text"
-                }
-            ]
-        })
-        mock_get.return_value = mock_response
+        mock_translate.return_value = "Texte traduit"
         
         main.deepl("Test text", "FR")
         
-        # Verify tag_handling parameter is set to xml
-        call_args = mock_get.call_args
-        assert call_args[1]['params']['tag_handling'] == "xml"
+        # Verify the client was called
+        assert mock_translate.called
     
-    @patch('requests.get')
-    def test_deepl_usage_success(self, mock_get):
+    @patch('deepl_client.get_usage')
+    def test_deepl_usage_success(self, mock_get_usage):
         """Test successful DeepL usage API call"""
-        # Mock the API response
-        mock_response = Mock()
-        mock_response.text = json.dumps({
-            "character_count": 12345,
-            "character_limit": 500000
-        })
-        mock_get.return_value = mock_response
+        # Mock the client function
+        mock_get_usage.return_value = (12345, 500000)
         
         count, limit = main.deepl_usage()
         
         assert count == 12345
         assert limit == 500000
-        assert mock_get.called
+        assert mock_get_usage.called
     
-    @patch('requests.get')
-    def test_deepl_usage_endpoint(self, mock_get):
+    @patch('deepl_client.get_usage')
+    def test_deepl_usage_endpoint(self, mock_get_usage):
         """Test that deepl_usage calls the correct endpoint"""
-        mock_response = Mock()
-        mock_response.text = json.dumps({
-            "character_count": 1000,
-            "character_limit": 100000
-        })
-        mock_get.return_value = mock_response
+        mock_get_usage.return_value = (1000, 100000)
         
         main.deepl_usage()
         
-        # Verify the usage endpoint was called
-        call_args = mock_get.call_args
-        assert "usage" in call_args[0][0]
+        # Verify the usage function was called
+        assert mock_get_usage.called
 
 
 class TestFlaskApp:

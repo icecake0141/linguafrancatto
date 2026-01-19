@@ -1,5 +1,9 @@
 #!/usr/bin/env python3
 
+# SPDX-License-Identifier: MIT
+# Copyright (c) 2020 icecake0141
+# This file contains LLM-generated code that has been reviewed and approved by humans.
+
 # Linguafrancatto v2.1
 # Slack Language translation bot powered by DeepL / Slack Bolt SDK
 # icecake0141 / 2020
@@ -16,6 +20,9 @@ from slack_bolt import App, Ack
 from slack_bolt.adapter.flask import SlackRequestHandler
 from slack_sdk import WebClient
 from slack_sdk.errors import SlackApiError
+
+import deepl_client
+from deepl_client import DeeplClientError
 
 ##################################
 # Google App Engie debugger
@@ -91,26 +98,33 @@ if DEBUG == "True":
 ### DeepL ###
 # Post DeepL translation API request
 def deepl(text, tr_to_lang):
-
-    # Hit text translation API
-    payload_req = {"auth_key":deepl_auth_key,"text":text, "target_lang":tr_to_lang, "tag_handling":"xml"}
-    r = requests.get(url, params=payload_req)
-
-    translated_text = json.loads(r.text)["translations"][0]["text"]
-
-    return translated_text
+    """
+    Translate text using DeepL API via the robust client.
+    
+    Args:
+        text: Text to translate
+        tr_to_lang: Target language code
+    
+    Returns:
+        Translated text
+    
+    Raises:
+        DeeplClientError: If translation fails
+    """
+    return deepl_client.translate_text(deepl_auth_key, text, tr_to_lang)
 
 
 def deepl_usage():
-
-    # Hit usage report API
-    payload_req = {"auth_key":deepl_auth_key}
-    r = requests.get(url_usage, params=payload_req)
-
-    count = json.loads(r.text)["character_count"]
-    limit = json.loads(r.text)["character_limit"]
-
-    return count, limit
+    """
+    Get DeepL API usage statistics via the robust client.
+    
+    Returns:
+        Tuple of (character_count, character_limit)
+    
+    Raises:
+        DeeplClientError: If usage retrieval fails
+    """
+    return deepl_client.get_usage(deepl_auth_key)
 
 ### Dirty hack of slack formatting ###
 def replace_markdown(text_block):
@@ -156,14 +170,21 @@ def revert_markdown(text_block):
 def usage(ack:Ack, message, say):
     ack()
 
-    # Check DeepL usage
-    count, limit = deepl_usage()
+    try:
+        # Check DeepL usage
+        count, limit = deepl_usage()
 
-    # Post DeepL API usage
-    say(f"{count} characters translated so far in the current billing purriod.\n"\
-        + f"Current meowximum number of characters that can be translated per billing purriod is {limit}.\n"\
-        + f"{count/limit*100:.2f} % used.")
-    say("Translation keyword:\n    Nyan:JP\n    Meow:EN\n    Miaou:FR\n    Мяу:RU")
+        # Post DeepL API usage
+        say(f"{count} characters translated so far in the current billing purriod.\n"\
+            + f"Current meowximum number of characters that can be translated per billing purriod is {limit}.\n"\
+            + f"{count/limit*100:.2f} % used.")
+        say("Translation keyword:\n    Nyan:JP\n    Meow:EN\n    Miaou:FR\n    Мяу:RU")
+    except DeeplClientError as e:
+        logging.error(f"Failed to retrieve DeepL usage: {type(e).__name__}")
+        say("Translation service is temporarily unavailable. Please try again later.")
+    except Exception as e:
+        logging.error(f"Unexpected error in usage handler: {type(e).__name__}")
+        say("An error occurred. Please try again later.")
 
     time.sleep(1)
 
@@ -184,14 +205,21 @@ def ondemand_translate(ack: Ack, message, say, context):
     else:
         return
 
-    # Hit translation API
-    translated_text = deepl(replace_markdown(message['text']),tr_to_lang)
+    try:
+        # Hit translation API
+        translated_text = deepl(replace_markdown(message['text']),tr_to_lang)
 
-    # retrieve username from userid
-    speaker = client.users_info(user=message['user']).data['user']['name']
+        # retrieve username from userid
+        speaker = client.users_info(user=message['user']).data['user']['name']
 
-    # Post message
-    say(f"{speaker} said:\n{revert_markdown(translated_text)}")
+        # Post message
+        say(f"{speaker} said:\n{revert_markdown(translated_text)}")
+    except DeeplClientError as e:
+        logging.error(f"Failed to translate message: {type(e).__name__}")
+        say("Translation service is temporarily unavailable. Please try again later.")
+    except Exception as e:
+        logging.error(f"Unexpected error in translation handler: {type(e).__name__}")
+        say("An error occurred during translation. Please try again later.")
 
     time.sleep(1)
 
@@ -226,11 +254,18 @@ def multichannel_translate(ack: Ack, message, say):
                         tr_to_lang = "JA"
                     else:
                         continue
-                    # Hit translation API
-                    translated_text = deepl(replace_markdown(message['text']),tr_to_lang)
+                    
+                    try:
+                        # Hit translation API
+                        translated_text = deepl(replace_markdown(message['text']),tr_to_lang)
 
-                    # Post message
-                    say(channel=name_dict[i],text=f"{speaker} said:\n{revert_markdown(translated_text)}")
+                        # Post message
+                        say(channel=name_dict[i],text=f"{speaker} said:\n{revert_markdown(translated_text)}")
+                    except DeeplClientError as e:
+                        logging.error(f"Failed to translate multichannel message: {type(e).__name__}")
+                        # Don't post error to other channels, just log it
+                    except Exception as e:
+                        logging.error(f"Unexpected error in multichannel translation: {type(e).__name__}")
 
                 else:
                     pass
