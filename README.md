@@ -161,7 +161,33 @@ ruff check .
 
 ### テスト
 
-現在、このプロジェクトには自動テストはありません。手動でテストする場合は、Slackワークスペースで実際にメッセージを送信して動作を確認してください。
+このプロジェクトには自動化されたユニットテストが含まれています。
+
+テストを実行するには：
+
+```sh
+# テスト依存関係がインストールされていることを確認
+pip install -r requirements.txt
+
+# すべてのテストを実行
+pytest
+
+# カバレッジレポート付きでテストを実行
+pytest --cov=main --cov-report=html
+
+# 特定のテストクラスを実行
+pytest tests/test_main.py::TestMarkdownFunctions -v
+
+# 特定のテストを実行
+pytest tests/test_main.py::TestMarkdownFunctions::test_replace_markdown_bold -v
+```
+
+テストには以下が含まれます：
+- マークダウン変換関数のテスト (`replace_markdown`、`revert_markdown`)
+- DeepL API関数のテスト (モック付き)
+- Flaskエンドポイントのテスト
+
+手動でテストする場合は、Slackワークスペースで実際にメッセージを送信して動作を確認してください。
 
 ## セキュリティ
 

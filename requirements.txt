@@ -1,7 +1,9 @@
 Flask>=1.1.2
 google-cloud-secret-manager>=2.0.0
-google-python-cloud-debugger
 gunicorn
 requests==2.25.0
 slack-bolt>=1.0.1
 slack_sdk>=3.1.0
+pytest>=7.0.0
+pytest-mock>=3.6.0
+pytest-cov>=3.0.0
